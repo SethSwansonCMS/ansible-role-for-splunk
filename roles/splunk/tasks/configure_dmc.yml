@@ -9,10 +9,16 @@
 - name: Configure systems as search peers to be monitored except indexers
   ansible.builtin.shell: |
     {{ splunk_home }}/bin/splunk add search-server https://{{ item }}:{{ splunkd_port }} -auth "{{ splunk_auth }}" -remoteUsername "{{ splunk_admin_username }}" -remotePassword "{{ splunk_admin_password }}"
+  register: result
   loop: "{{ splunk_dmc_not_indexers_list }}"
   become: true
   become_user: "{{ splunk_nix_user }}"
   no_log: true
+  changed_when: result.rc == 0
+  failed_when:
+    # rc 24 means a server with that name is already registered
+    - result.rc != 24
+    - result.rc != 0
 
 - name: Configure monitoring console in auto mode
   community.general.ini_file:
